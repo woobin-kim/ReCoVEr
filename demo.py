@@ -12,6 +12,15 @@ from utils.visualize import flow_to_rgb
 def read_img(file):
     img = np.array(Image.open(str(file)))
     img = torch.Tensor(img)
+    
+    # Handle grayscale images (2D: H, W) by converting to RGB (3D: H, W, 3)
+    if img.dim() == 2:
+        img = img.unsqueeze(2)  # Add channel dimension: (H, W) -> (H, W, 1)
+        img = img.repeat(1, 1, 3)  # Duplicate to RGB: (H, W, 1) -> (H, W, 3)
+    # Handle RGBA images (4 channels) by converting to RGB
+    elif img.dim() == 3 and img.size(2) == 4:
+        img = img[:, :, :3]  # Take only RGB channels, drop alpha
+    
     img = img.permute(2, 0, 1)  # HWC -> CHW
 
     return img
@@ -81,16 +90,16 @@ if __name__ == "__main__":
         np_vis = vis.permute(1, 2, 0).detach().cpu().numpy()
 
     if args.display:
-        plt.figure()
-        plt.subplot(1, 3, 1)
-        plt.imshow(
-            img1[0].permute(1, 2, 0).detach().cpu().numpy().round().astype(np.uint8)
-        )
-        plt.subplot(1, 3, 2)
-        plt.imshow(
-            img2[0].permute(1, 2, 0).detach().cpu().numpy().round().astype(np.uint8)
-        )
-        plt.subplot(1, 3, 3)
+        # plt.figure()
+        # plt.subplot(1, 3, 1)
+        # plt.imshow(
+        #     img1[0].permute(1, 2, 0).detach().cpu().numpy().round().astype(np.uint8)
+        # )
+        # plt.subplot(1, 3, 2)
+        # plt.imshow(
+        #     img2[0].permute(1, 2, 0).detach().cpu().numpy().round().astype(np.uint8)
+        # )
+        # plt.subplot(1, 3, 3)
         plt.imshow(np_vis)
         plt.show()
 
