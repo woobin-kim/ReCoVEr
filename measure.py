@@ -64,9 +64,24 @@ def measure_flops(model, *args, **kwargs):
     }
 
 
+def count_parameters(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    print(f"Total params: {total_params}, Trainable params: {trainable_params}")
+
+    return {
+        "total": total_params,
+        "trainable": trainable_params,
+        "K": total_params / 1000,
+        "M": total_params / 1000000,
+        "B": total_params / 1000000000,
+    }
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="Measure", description="Measures the required FLOPS, runtime, and memory"
+        prog="Measure", description="Measures the required parameters, FLOPS, runtime, and memory"
     )
 
     parser.add_argument("width", nargs="?", type=int)
@@ -99,6 +114,7 @@ if __name__ == "__main__":
         input1 = torch.rand((1, 3, args.height, args.width)).cuda()
         input2 = torch.rand((1, 3, args.height, args.width)).cuda()
 
+        params = count_parameters(model)
         memory = measure_peak_memory(model, input1, input2, test_mode=True)
         time = measure_time(
             model,
@@ -111,5 +127,5 @@ if __name__ == "__main__":
         flops = measure_flops(model, input1, input2, test_mode=True)
 
         print(
-            f'{args.model} h:{args.height} w:{args.width} memory:{memory["GB"]:.2f}GB time:{time["mean"]:.2f}ms FLOPS:{flops["GFLOPS"]:.2f}GFLOPS'
+            f'{args.model} h:{args.height} w:{args.width} params:{params["M"]:.2f}M memory:{memory["GB"]:.2f}GB time:{time["mean"]:.2f}ms FLOPS:{flops["GFLOPS"]:.2f}GFLOPS'
         )
