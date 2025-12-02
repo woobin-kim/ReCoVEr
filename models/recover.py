@@ -74,6 +74,13 @@ class ReCoVEr(nn.Module):
         up_info = up_info.permute(0, 1, 4, 2, 5, 3)
 
         return up_flow.reshape(N, 2, 8 * H, 8 * W), up_info.reshape(N, C, 8 * H, 8 * W)
+    
+    def upsample_data2(self, flow, info, mask):
+        """Upsample [H/8, W/8, C] -> [H, W, C] using convex combination"""
+        H, W = flow.shape[2:]
+        up_flow = nn.functional.interpolate(flow, size=(H * 8, W * 8), mode='bilinear', align_corners=False) * 8
+        up_info = nn.functional.interpolate(info, size=(H * 8, W * 8), mode='bilinear', align_corners=False) * 8
+        return up_flow, up_info
 
     def forward(
         self,
@@ -152,8 +159,10 @@ class ReCoVEr(nn.Module):
             if itr < iters-1:
                 flow_up, info_up = self.upsample_data(flow_8x, info_8x, weight_update)
             else:
-                flow_up = nn.functional.interpolate(flow_8x, size=(H, W), mode='bilinear', align_corners=False)
-                info_up = nn.functional.interpolate(info_8x, size=(H, W), mode='bilinear', align_corners=False)
+                flow_up, info_up = self.upsample_data2(flow_8x, info_8x, weight_update)
+                # flow_up = nn.functional.interpolate(flow_8x, size=(H, W), mode='bilinear', align_corners=False)
+                # info_up = nn.functional.interpolate(info_8x, size=(H, W), mode='bilinear', align_corners=False)
+
             flow_predictions.append(flow_up)
             info_predictions.append(info_up)
 

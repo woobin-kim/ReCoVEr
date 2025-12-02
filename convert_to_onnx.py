@@ -15,7 +15,7 @@ class ModelWrapper(torch.nn.Module):
     def forward(self, image1, image2):
         # preprocess(image1, image2)
         output = self.model(image1, image2, test_mode=True, disable_cost=True)
-        return output["final"]
+        return output["final"], output["info"][-1]
 
 def read_img(file):
     img = np.array(Image.open(str(file)))
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             (input1, input2),
             "recover_mn.onnx",
             input_names=["image1", "image2"],
-            output_names=["output"],
+            output_names=["output", "info"],
             opset_version=17,
             do_constant_folding=True,
             dynamic_axes=None
