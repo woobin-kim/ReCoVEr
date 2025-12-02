@@ -102,7 +102,6 @@ class ReCoVEr(nn.Module):
         # padding
         padder = InputPadder(image1.shape)
         image1, image2 = padder.pad(image1, image2)
-        N, _, H, W = image1.shape
         dilation = torch.ones(N, 1, H // 8, W // 8, device=image1.device)
         # run the context network
         cnet = self.cnet(torch.cat([image1, image2], dim=1))
@@ -132,12 +131,12 @@ class ReCoVEr(nn.Module):
             corr = torch.zeros((N, 324, H // 8, W // 8), device=image1.device)
 
         for itr in range(iters):
-            N, _, H, W = flow_8x.shape
+            N8, _, H8, W8 = flow_8x.shape
             flow_8x = flow_8x.detach()
 
             if not disable_cost:
                 coords2 = (
-                    (coords_grid(N, H, W, device=image1.device) + flow_8x)
+                    (coords_grid(N8, H8, W8, device=image1.device) + flow_8x)
                     .type(image1.dtype)
                     .detach()
                 )
@@ -148,8 +147,13 @@ class ReCoVEr(nn.Module):
             weight_update = 0.25 * self.upsample_weight(net)
             flow_8x = flow_8x + flow_update[:, :2]
             info_8x = flow_update[:, 2:]
+
             # upsample predictions
-            flow_up, info_up = self.upsample_data(flow_8x, info_8x, weight_update)
+            if itr < iters-1:
+                flow_up, info_up = self.upsample_data(flow_8x, info_8x, weight_update)
+            else:
+                flow_up = nn.functional.interpolate(flow_8x, size=(H, W), mode='bilinear', align_corners=False)
+                info_up = nn.functional.interpolate(info_8x, size=(H, W), mode='bilinear', align_corners=False)
             flow_predictions.append(flow_up)
             info_predictions.append(info_up)
 

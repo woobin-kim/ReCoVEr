@@ -64,6 +64,6 @@ if __name__ == "__main__":
             output_names=["output"],
             opset_version=17,
             do_constant_folding=True,
-            dynamic_axes={}
+            dynamic_axes=None
         )
         print(f"Model exported to recover_mn.onnx")
